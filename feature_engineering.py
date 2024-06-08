@@ -36,6 +36,7 @@ class FeatureEngineering:
         Overall method to perform feature engineering.
 
         """
+        self.add_season_column()
         self.create_shifts(n)
         self.cyclical_encoding()
         self.onehotencoding(categorical_features)
@@ -97,6 +98,33 @@ class FeatureEngineering:
             self.df = pd.concat([self.df, ohe_df], axis = 1)
             self.df = self.df.drop(columns = [f"{feature}"], axis = 1)
 
+        return self.df
+
+    def get_season(self, date):
+        """
+        Get season dependent on date
+        """
+        year = date.year
+        seasons = {
+            'winter': (pd.Timestamp(f'{year}-12-21'), pd.Timestamp(f'{year+1}-03-20')),
+            'spring': (pd.Timestamp(f'{year}-03-21'), pd.Timestamp(f'{year}-06-20')),
+            'summer': (pd.Timestamp(f'{year}-06-21'), pd.Timestamp(f'{year}-09-22')),
+            'autumn': (pd.Timestamp(f'{year}-09-23'), pd.Timestamp(f'{year}-12-20'))
+        }
+
+        for season, (start, end) in seasons.items():
+            if start <= date <= end:
+                return season
+
+        # Special case for dates in winter spanning across the year boundary
+        if date >= pd.Timestamp(f'{year}-12-21') or date <= pd.Timestamp(f'{year+1}-03-20'):
+            return 'winter'
+
+    def add_season_column(self):
+        """
+        Add a season column to the DataFrame based on the date_time column
+        """
+        self.df['season'] = self.df['date_time'].apply(self.get_season)
         return self.df
 
 class WeatherFetcher:

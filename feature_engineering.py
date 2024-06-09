@@ -30,6 +30,7 @@ building_name := Name des Gebäudes, in dem sich die CO2-Ampel befindet
 class FeatureEngineering:
     def __init__(self, df):
         self.df = df
+        self.filtered_dataframes = None
 
     def feature_engineering(self, n, categorical_features):
         """
@@ -72,7 +73,8 @@ class FeatureEngineering:
 
         self.df.drop(columns=[ 
                             'BLE', 
-                            'snr', 
+                            'snr',
+                            'color',
                             'rssi',
                             'IR',
                             'VOC',
@@ -126,6 +128,25 @@ class FeatureEngineering:
         """
         self.df['season'] = self.df['date_time'].apply(self.get_season)
         return self.df
+    
+    def filter_rooms_by_prefix(self):
+        """
+        Filters the DataFrame based on the start of the room_number column.
+
+        Returns:
+            dict: A dictionary of DataFrames where keys are room number prefixes and values are filtered DataFrames.
+        """
+        if self.filtered_dataframes is None:
+            self.filtered_dataframes = {}
+
+            # Extract unique prefixes from room_number column
+            prefixes = self.df['room_number'].str.extract(r'^(e\d)').dropna().squeeze().unique()
+
+            # Filter DataFrame for each prefix and store in dictionary
+            for prefix in prefixes:
+                self.filtered_dataframes[prefix] = self.df[self.df['room_number'].str.startswith(prefix)]
+
+        return self.filtered_dataframes
 
 class WeatherFetcher:
     """

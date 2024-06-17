@@ -71,7 +71,10 @@ class FeatureEngineering:
         Drop columns that are not in use to predict the temperature.
         """
 
-        self.df.drop(columns=[ 
+        self.df.drop(columns=[
+                            'hum_diff',
+                            'CO2', 
+                            'vis',    
                             'BLE', 
                             'snr',
                             'color',
@@ -89,7 +92,13 @@ class FeatureEngineering:
                             'hum_diff_per_sec', 
                             'IR_diff_per_sec',
                             'time_diff_sec', 
-                            'vis_diff_per_sec'], inplace=True)
+                            'vis_diff_per_sec','CO2_diff', 
+                            'vis_diff', 
+                            'year', 
+                            'month', 
+                            'dayofweek',
+                            'hour', 
+                            'VOC_CO2_ratio',], inplace=True)
     
     def onehotencoding(self, categorical_features:list):
         """

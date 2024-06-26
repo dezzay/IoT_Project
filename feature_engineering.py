@@ -2,37 +2,16 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from meteostat import Point, Hourly
+from sklearn.preprocessing import OneHotEncoder
 
-"""
-Attributsbeschreibung:
 
-date_time := Datum (Format: YYYY-MM-DD HH:MM:SS)
-device_id := CO2-Ampel-ID
-tmp := Durchschnittliche Temperatur
-hum := Durchschnittliche Luftfeuchtigkeit
-CO2 := Durchschnittlicher CO2-Wert
-VOC := Durchschnittliche Schadstoffbelastung
-vis := Durchschnittlicher Lichtwert
-IR := Durchschnittlicher Infrarotwert
-WIFI := Durchschnittliche Anzahl an WiFi-Geräten
-BLE := Durchschnittliche Anzahl an Bluetoothgeräten
-rssi := received signal strength indication, Empfangsfeldstärke kabelloser Kommunikationsanwendungen
-channel_rssi := Gesamtstärke des ganzen Empfangs
-snr := Signal-Rausch-Verhältnis
-gateway := Genutztes Gateway für die Übertragung des Datenpunktes
-channel_index :=
-spreading_factor :=
-bandwidth :=
-f_cnt :=
-building_name := Name des Gebäudes, in dem sich die CO2-Ampel befindet 
-"""
 
 class FeatureEngineering:
     def __init__(self, df):
         self.df = df
         self.filtered_dataframes = None
 
-    def feature_engineering(self, n, categorical_features):
+    def feature_engineering(self, n):
         """
         Overall method to perform feature engineering.
 
@@ -40,7 +19,6 @@ class FeatureEngineering:
         self.add_season_column()
         self.create_shifts(n)
         self.cyclical_encoding()
-        self.onehotencoding(categorical_features)
         self.delete_columns()
 
         return self.df.dropna()
@@ -75,7 +53,7 @@ class FeatureEngineering:
                             'hum_diff',
                             'CO2', 
                             'vis',    
-                            'BLE', 
+                            'BLE',
                             'snr',
                             'color',
                             'rssi',
@@ -99,17 +77,31 @@ class FeatureEngineering:
                             'dayofweek',
                             'hour', 
                             'VOC_CO2_ratio',], inplace=True)
-    
-    def onehotencoding(self, categorical_features:list):
+    @staticmethod
+    def onehotencoding(df, categorical_features:list):
         """
-        One-hot-encoding for categorical features e.g room_number.
-        """
-        for feature in categorical_features:
-            ohe_df = pd.get_dummies(self.df[f"{feature}"], prefix = f"{feature}", dtype="int")
-            self.df = pd.concat([self.df, ohe_df], axis = 1)
-            self.df = self.df.drop(columns = [f"{feature}"], axis = 1)
+        Performs one-hot encoding on specified categorical features of a DataFrame.
 
-        return self.df
+        Parameters:
+        df (pd.DataFrame): The input DataFrame.
+        categorical_features (list of str): List of column names to be one-hot encoded.
+
+        Returns:
+        pd.DataFrame: DataFrame with one-hot encoded columns.
+        """
+        df_encoded = df.copy()
+    
+        for feature in categorical_features:
+            encoder = OneHotEncoder(sparse_output=False)
+            one_hot_encoded = encoder.fit_transform(df_encoded[[feature]])
+            encoded_columns = encoder.get_feature_names_out([feature])
+            df_one_hot = pd.DataFrame(one_hot_encoded, columns=encoded_columns, index=df_encoded.index)
+            
+            # Concatenate the original DataFrame with the one-hot encoded DataFrame
+            df_encoded = pd.concat([df_encoded, df_one_hot], axis=1)
+
+
+        return df_encoded
 
     def get_season(self, date):
         """
@@ -149,7 +141,7 @@ class FeatureEngineering:
             self.filtered_dataframes = {}
 
             # Extract unique prefixes from room_number column
-            prefixes = self.df['room_number'].str.extract(r'^(e\d)').dropna().squeeze().unique()
+            prefixes = self.df['room_number'].str.extract(r'^(e\d|eu)').dropna().squeeze().unique()
 
             # Filter DataFrame for each prefix and store in dictionary
             for prefix in prefixes:

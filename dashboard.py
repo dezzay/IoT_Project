@@ -1,32 +1,29 @@
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from dash import Dash, html, dcc, Input, Output, callback
 import pandas as pd
 from dashboard_functions import *
 
 # Daten - Seite 1
-df_hourly = pd.read_csv(r'Dashboard\hourly_data.csv')
-
+df_hourly = pd.read_csv(r'Dashboard\dashboard_hourly_data.csv',parse_dates=['date_time'])
+room_value_counts = pd.read_csv(r'Dashboard\dashboard_room_value_counts.csv',index_col='room_number')
+df_ampel = pd.read_csv(r'Dashboard\dashboard_df_ampel')
 # Daten - Seite 2
 
-season_data = pd.read_csv(r'Dashboard\predictions.csv') 
+season_data = pd.read_csv(r'Dashboard\dashboard_season_data.csv',parse_dates=['date_time']) 
 
-df_vanilla = pd.read_csv(r'Dashboard\df_vanilla.csv')
+df_vanilla = pd.read_csv(r'Dashboard\dashboard_df_vanilla.csv',parse_dates=['date_time'])
 
-# Daten - Seite 3
-
-
-# Beispielhafte Daten
-
-data_scatter = {
-    'x': [1, 2, 3, 4, 5],
-    'y': [2, 1, 3, 5, 4]
-}
 
 # Figures - Seite 1
+# Figure 1
 last_selected_metric_seite1_fig1 = 'CO2'  # Startwert, wenn nichts ausgewählt ist
 
 seite1_fig1 = seite1_figure1(df_hourly,last_selected_metric_seite1_fig1)
+
+# Figure 2
+seite1_fig2 = seite1_figure2(room_value_counts)
+
+# Figure 3
+seite1_fig3 = seite1_figure3(df_ampel)
 
 # Figures - Seite 2
 last_selected_floor_seite2 = 'Etage EU'
@@ -63,7 +60,18 @@ app.layout = html.Div([
             dcc.Graph(
                 id='line-chart',
                 figure=seite1_fig1
-            )
+            ),
+    html.Br(),
+            dcc.Graph(
+                id='room_value_count-chart',
+                figure=seite1_fig2
+            ),
+    html.Br(),
+            dcc.Graph(
+                id='deutschland-chart',
+                figure=seite1_fig3
+            ),
+    html.Br(),
         ]),
         dcc.Tab(label='ML-Predictions', children=[
             html.Br(),
@@ -102,17 +110,7 @@ app.layout = html.Div([
 )
 
         ]),
-        dcc.Tab(label='Sonderfälle', children=[
-            dcc.Graph(
-                id='scatter-chart',
-                figure={
-                    'data': [
-                        go.Scatter(x=data_scatter['x'], y=data_scatter['y'], mode='markers', name='Streudiagramm')
-                    ],
-                    'layout': go.Layout(title='Streudiagramm')
-                }
-            )
-        ])
+    
     ])
 ])
 

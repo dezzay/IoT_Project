@@ -4,6 +4,7 @@ import tarfile, zipfile
 import numpy as np
 from sklearn.ensemble import IsolationForest
 pd.options.mode.chained_assignment = None  # default='warn'
+
 class DataExtractor:
     """Extrahiert den historischen CO2-Ampeldatensatz und erstellt ein DataFrame aus den vorliegenden Dateien"""
     def __init__(self, first_directory, new_directory):
@@ -103,7 +104,7 @@ class DataPreprocessing:
         self.get_outliers_out = get_outliers_out
         self.roll = roll
         self.date_time_column = date_time_column
-    def preprocess_df(self, df, rolling_window:str, sample_time:str = "15min"):
+    def preprocess_df(self, df, rolling_window:str, sample_time:str = "60min"):
         """Allgemeine Methode zur Durchführung der Vorverarbeitungsschritte für einen gegebenen Datenrahmen df.
         Args
             df (pandas.DataFrame): ein gegebener DataFrame, der vorverarbeitet werden soll.
@@ -249,7 +250,7 @@ class DataPreprocessing:
         Returns:
             df (pandas.DataFrame): DataFrame Objekt.
         """
-        columns = ["WIFI", "bandwidth", "channel_rssi", "channel_index", "device_id", "gateway", "f_cnt", "spreading_factor"]
+        columns = ["bandwidth", "channel_rssi", "channel_index", "device_id", "gateway", "f_cnt", "spreading_factor"]
         for col in columns:
             # for-Schleife, falls nicht alle Spalten im Datensatz enthalten sind.
             try:
@@ -271,7 +272,7 @@ class DataPreprocessing:
         df = df[df.hum <= 100]
         # Die Temperatur wird in °C gemessen. Daher gehen wir davon aus, dass es keine Raumtemperaturen über 50°C geben kann. 
         # Auch wegen des Frostschutzes der Heizkörper sollte die Temperatur nicht unter 10°C liegen.
-        # Diese Filtermethode muss für den Fall möglicherweise neu bewertet werden, wenn ein Feuer ausbricht oder ein Leck auftritt, das zu einem Temperaturabfall führen könnte.
+        
         df = df[(df.tmp <= 50) & (df.tmp >= 10)]
         # Der VOC-Wert ist in der Regel etwa gleich hoch oder höchstens sechsmal höher als der CO2-Wert. 
         # Einige Ausreißer geben ein Verhältnis von 156:1 an, was nicht plausibel ist.
@@ -291,12 +292,12 @@ class DataPreprocessing:
         return df
     
     
-    def create_rolling_windows(self, df, rolling_window, sample_time = "10min"):
+    def create_rolling_windows(self, df, rolling_window, sample_time = "60min"):
         """Neuabtastung der Daten in einem bestimmten Zeitintervall (sample_time) und Erstellung von Rolling Windows mit der Größe von rolling_window.
         
         Args:
             df (pandas.DataFrame): DataFrame Objekt.
-            rolling_window (str): die Größe des rollierenden Fensters (z. B. '1s', '1min', '1h').
+            rolling_window (str): die Größe des rollierenden Fensters ('1h').
             sample_time (str): die Größe, die für das Resampling des DataFrame df verwendet werden soll. Das Resampling wird an der 'date_time_column' durchgeführt.
         Returns:
             df (pandas.DataFrame): DataFrame Objekt.
@@ -340,7 +341,7 @@ class DataPreprocessing:
         df = df.sort_values(by = [self.date_time_column])
         df["time_diff_sec"] = df.groupby('room_number')[self.date_time_column].diff().dt.seconds
         # Iteriere über jedes numerische Feature und berechne die zeitliche Werteänderungen
-        for feature in ["tmp", "hum", "CO2", "VOC", "vis", "IR", "BLE", "vis"]:
+        for feature in ["tmp"]:
                 df[f"{feature}_diff"] = df.groupby('room_number')[feature].diff()
         # es entstehen ggf. unendlich große Werte. Ersetze sie durch 0.
         df = df.replace([np.inf, -np.inf], 0)
@@ -353,10 +354,11 @@ class DataPreprocessing:
             df (pandas.DataFrame): DataFrame Objekt.
         Returns:
             df (pandas.DataFrame): DataFrame Objekt."""
-        for feature in ["CO2_diff", "VOC_diff", "tmp_diff", "hum_diff", "IR_diff", "vis_diff"]:
+        for feature in ["tmp_diff"]:
                 df[f"{feature}_per_sec"] = df[feature].div(df["time_diff_sec"])
         df = df.replace([np.inf, -np.inf], 0)
         return df
+    
     def fill_na(self, df):
         """Fülle fehlende Werte im DataFrame auf.
         
@@ -384,7 +386,7 @@ class DataPreprocessing:
             df (pandas.DataFrame): DataFrame Objekt.
         """
         # Jahr 2022 wird als 1 behandelt, da die Messung in 2022 angefangen hat. 2023 wird als 2 berechnet etc.
-        df.loc[:, "year"] = df[self.date_time_column].dt.year - 2021
+        df.loc[:, "year"] = df[self.date_time_column].dt.year
         df.loc[:, "month"] = df[self.date_time_column].dt.month
         df.loc[:, "dayofweek"] = df[self.date_time_column].dt.dayofweek
         df.loc[:, "hour"] = df[self.date_time_column].dt.hour
@@ -395,7 +397,4 @@ class DataPreprocessing:
         df.loc[(df.CO2 >= 1200) & (df.CO2 < 1600), "color"] = "red"
         df.loc[(df.CO2 >= 1600), "color"] = "red_blinking"
         # Einige Räume haben unterschiedliche Verhältnisse zwischen VOC und CO2.
-        df["VOC_CO2_ratio"] = (df["VOC"]/df["CO2"]).round(4)
-        # falls CO2 0 ist, wird in der oberen Zeile durch 0 geteilt. Wir ersetzen diese Fälle durch den Zähler der Division (also mit dem VOC-Wert).
-        df['VOC_CO2_ratio'] = df['VOC_CO2_ratio'].combine_first(df['VOC'])
         return df

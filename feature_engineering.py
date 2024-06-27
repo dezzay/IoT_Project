@@ -50,33 +50,22 @@ class FeatureEngineering:
         """
 
         self.df.drop(columns=[
-                            'hum_diff',
-                            'CO2', 
-                            'vis',    
+                            'CO2',
+                            'VOC', 
+                            'vis', 
+                            'IR', 
                             'BLE',
                             'snr',
                             'color',
                             'rssi',
-                            'IR',
-                            'VOC',
-                            'VOC_diff',
-                            'IR_diff',
-                            'IR_diff',                                                                                    
-                            'BLE_diff',
                             'building_name',
-                            'CO2_diff_per_sec', 
-                            'VOC_diff_per_sec', 
-                            'tmp_diff_per_sec',
-                            'hum_diff_per_sec', 
-                            'IR_diff_per_sec',
-                            'time_diff_sec', 
-                            'vis_diff_per_sec','CO2_diff', 
-                            'vis_diff', 
                             'year', 
                             'month', 
                             'dayofweek',
-                            'hour', 
-                            'VOC_CO2_ratio',], inplace=True)
+                            'hour',
+                            'tmp_diff_per_sec',
+                            'time_diff_sec', 
+                            ], inplace=True)
     @staticmethod
     def onehotencoding(df, categorical_features:list):
         """

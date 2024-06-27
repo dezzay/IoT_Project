@@ -5,7 +5,7 @@ from dashboard_functions import *
 # Daten - Seite 1
 df_hourly = pd.read_csv(r'Dashboard\dashboard_hourly_data.csv',parse_dates=['date_time'])
 room_value_counts = pd.read_csv(r'Dashboard\dashboard_room_value_counts.csv',index_col='room_number')
-df_ampel = pd.read_csv(r'Dashboard\dashboard_df_ampel')
+df_ampel = pd.read_csv(r'Dashboard\dashboard_df_ampel.csv')
 # Daten - Seite 2
 
 season_data = pd.read_csv(r'Dashboard\dashboard_season_data.csv',parse_dates=['date_time']) 

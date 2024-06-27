@@ -4,7 +4,7 @@
 2. [Preprocessing](#preprocessing)
 3. [Feature Engineering](#feature-engineering)
 4. [Forecast](#forecast)
-   - [Forecast abhängig von Wetter/Jahreszeit](#forecast-abhängig-von-wetter/jahreszeit)
+   - [Verbesserung des Forecasts](#verbesserung-des-forecasts)
 5. [Dashboard](#dashboard)
 
 
